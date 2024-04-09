@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string>
 #include <opencv2/opencv.hpp>
+#include <omp.h>
 #include <vector>
 
 using namespace std;
@@ -43,10 +44,19 @@ vector<Mat> readImages(string path)
 
 int main(int argc, char **argv)
 {
+    cout << "Probando la lectura de imágenes\n";
     vector<Mat> images = readImages(NEGATIVE_IMAGES_PATH + "*.jpg");
     for (Mat image : images)
     {
         cout << "Image size: " << image.cols << " x " << image.rows << '\n';
+    }
+
+    cout << '\n';
+
+    cout << "Probando OpenMP\n";
+#pragma omp parallel default(none)
+    {
+        printf("Thread = %d\n", omp_get_thread_num());
     }
     return EXIT_SUCCESS;
 }
