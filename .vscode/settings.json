@@ -1,9 +1,6 @@
 {
   "files.associations": {
     "*.embeddedhtml": "html",
-    "xstring": "cpp",
-    "vector": "cpp",
-    "xlocinfo": "cpp",
-    "xutility": "cpp"
+    "tuple": "cpp"
   }
 }
