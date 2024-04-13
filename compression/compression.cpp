@@ -42,18 +42,82 @@ enum class ImageCompressionRate
 	VERY_HIGH = 16
 };
 
-vector<tuple<int, int>> getTopLeftIndexes(int rows, int columns, ImageCompressionRate rate)
+vector<tuple<unsigned int, unsigned int>> getTopLeftPixelIndexes(unsigned int rows, unsigned int columns, ImageCompressionRate rate)
 {
-	int compressionRate = static_cast<int>(rate);
-	vector<tuple<int, int>> topLeftIndexes;
+	unsigned int compressionRate = static_cast<unsigned int>(rate);
+	vector<tuple<unsigned int, unsigned int>> topLeftPixelIndexes;
 	for (size_t i = 0; i < columns; i += compressionRate)
 	{
 		for (size_t j = 0; j < rows; j += compressionRate)
 		{
-			topLeftIndexes.push_back(make_tuple(i, j));
+			topLeftPixelIndexes.push_back(make_tuple(i, j));
 		}
 	}
-	return topLeftIndexes;
+	return topLeftPixelIndexes;
+}
+
+vector<tuple<unsigned int, unsigned int>> getPixelGroup(tuple<unsigned int, unsigned int> pixelIndex, ImageCompressionRate rate)
+{
+	unsigned int compressionRate = static_cast<unsigned int>(rate);
+	unsigned int x = get<0>(pixelIndex);
+	unsigned int y = get<1>(pixelIndex);
+	vector<tuple<unsigned int, unsigned int>> adjacentPixelIndexes;
+	for (size_t i = 0; i < compressionRate; ++i)
+	{
+		for (size_t j = 0; j < compressionRate; ++j)
+		{
+			adjacentPixelIndexes.push_back(make_tuple(x + i, y + j));
+		}
+	}
+	return adjacentPixelIndexes;
+}
+
+vector<vector<tuple<unsigned int, unsigned int>>> getAllPixelGroups(Mat image, ImageCompressionRate rate)
+{
+	vector<vector<tuple<unsigned int, unsigned int>>> pixelGroups;
+	vector<tuple<unsigned int, unsigned int>> topLeftPixelIndexes = getTopLeftPixelIndexes(image.rows, image.cols, rate);
+	for (size_t i = 0; i < topLeftPixelIndexes.size(); ++i)
+	{
+		vector<tuple<unsigned int, unsigned int>> adjacentPixelIndexes = getPixelGroup(topLeftPixelIndexes[i], rate);
+		pixelGroups.push_back(adjacentPixelIndexes);
+	}
+	return pixelGroups;
+}
+
+Vec3b getAverageFromPixelGroup(Mat image, vector<tuple<unsigned int, unsigned int>> pixelGroup)
+{
+	vector<unsigned int> redValues, greenValues, blueValues;
+	for (size_t i = 0; i < pixelGroup.size(); ++i)
+	{
+		unsigned int x = get<0>(pixelGroup[i]);
+		unsigned int y = get<1>(pixelGroup[i]);
+		Vec3b pixel = image.at<Vec3b>(Point(x, y));
+		redValues.push_back(pixel[0]);
+		greenValues.push_back(pixel[1]);
+		blueValues.push_back(pixel[2]);
+	}
+	unsigned int redAverage = accumulate(redValues.begin(), redValues.end(), 0) / redValues.size();
+	unsigned int greenAverage = accumulate(greenValues.begin(), greenValues.end(), 0) / greenValues.size();
+	unsigned int blueAverage = accumulate(blueValues.begin(), blueValues.end(), 0) / blueValues.size();
+	return Vec3b(redAverage, greenAverage, blueAverage);
+}
+
+Mat compressImage(Mat image, ImageCompressionRate rate)
+{
+	Mat compressedImage;
+	unsigned int compressionRate = static_cast<unsigned int>(rate);
+	vector<vector<tuple<unsigned int, unsigned int>>> pixelGroups = getAllPixelGroups(image, rate);
+	for (size_t i = 0; i < pixelGroups.size(); ++i)
+	{
+		Vec3b average = getAverageFromPixelGroup(image, pixelGroups[i]);
+		for (size_t j = 0; j < pixelGroups[i].size(); ++j)
+		{
+			unsigned int x = get<0>(pixelGroups[i][j]);
+			unsigned int y = get<1>(pixelGroups[i][j]);
+			image.at<Vec3b>(Point(x, y)) = average;
+		}
+	}
+	return image;
 }
 
 int main(int argc, char **argv)
@@ -62,14 +126,15 @@ int main(int argc, char **argv)
 	for (size_t i = 0; i < images.size(); ++i)
 	{
 		Mat image = images[i];
-		cout << "Image size: " << image.cols << " x " << image.rows << '\n';
-		vector<tuple<int, int>> topLeftIndexesLow = getTopLeftIndexes(image.rows, image.cols, ImageCompressionRate::VERY_HIGH);
-		for (size_t j = 0; j < topLeftIndexesLow.size(); j++)
-		{
-			int x = get<0>(topLeftIndexesLow[j]);
-			int y = get<1>(topLeftIndexesLow[j]);
-			cout << "Top left index: " << x << ", " << y << '\n';
-		}
+		cout << "Processing image " << i << "..." << endl;
+		Mat compressedImageLow = compressImage(image.clone(), ImageCompressionRate::LOW);
+		saveImage(COMPRESSION_IMAGES_PATH_PROCESSED + to_string(i) + "_compressed_low.tiff", compressedImageLow);
+		Mat compressedImageMedium = compressImage(image.clone(), ImageCompressionRate::MEDIUM);
+		saveImage(COMPRESSION_IMAGES_PATH_PROCESSED + to_string(i) + "_compressed_medium.tiff", compressedImageMedium);
+		Mat compressedImageHigh = compressImage(image.clone(), ImageCompressionRate::HIGH);
+		saveImage(COMPRESSION_IMAGES_PATH_PROCESSED + to_string(i) + "_compressed_high.tiff", compressedImageHigh);
+		Mat compressedImageVeryHigh = compressImage(image.clone(), ImageCompressionRate::VERY_HIGH);
+		saveImage(COMPRESSION_IMAGES_PATH_PROCESSED + to_string(i) + "_compressed_very_high.tiff", compressedImageVeryHigh);
 	}
 	return EXIT_SUCCESS;
 }
