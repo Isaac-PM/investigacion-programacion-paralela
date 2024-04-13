@@ -8,8 +8,8 @@
 using namespace std;
 using namespace cv;
 
-const string NEGATIVE_IMAGES_PATH = "images/negatives/";
-const string NEGATIVE_IMAGES_PATH_NEW = "images/negatives/New/";
+const string FILTERS_IMAGES_PATH = "images/filters/";
+const string FILTERS_IMAGES_PATH_PROCESSED = "images/filters/processed/";
 enum class ImageReadResult
 {
 	SUCCESS,
@@ -75,7 +75,7 @@ Mat applyContrast(const Mat& inputImage, double contrastValue, int targetWidth, 
 int main(int argc, char** argv)
 {
 	cout << "Probando la lectura de imágenes\n";
-	vector<Mat> images = readImages(NEGATIVE_IMAGES_PATH + "*.jpg");
+	vector<Mat> images = readImages(FILTERS_IMAGES_PATH + "*.jpg");
 	for (size_t i = 0; i < images.size(); ++i)
 	{
 		Mat image = images[i];
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
 		waitKey(0);
 
 		// Guardar la imagen con contraste aplicado usando nombres únicos
-		string outputFileName = NEGATIVE_IMAGES_PATH_NEW + "contrast_image_" + to_string(i) + ".jpg";
+		string outputFileName = FILTERS_IMAGES_PATH_PROCESSED + "contrast_image_" + to_string(i) + ".jpg";
 		imwrite(outputFileName, contrastImage);
 	}
 
