@@ -1,3 +1,5 @@
+// Author: Isaac Palma Medina @ isaac.palma.medina@est.una.ac.cr
+
 #include <fstream>
 #include <iostream>
 #include <numeric>
@@ -16,8 +18,8 @@ using namespace cv;
 
 const string COMPRESSION_IMAGES_PATH = "../images/compression/";
 const string COMPRESSION_IMAGES_PATH_PROCESSED = "../images/compression/processed/";
-const string BENCHMARK_COLUMNS = "image,resolution,number_of_pixels,compression_rate,number_of_pixel_groups,threads,time";
-const string SINGLE_CORE_BENCHMARK_FILE = "single_core.csv";
+const string BENCHMARK_COLUMNS = "image,resolution,number_of_pixels,compression_rate,pixel_group_quantity,pixel_group_quantity_per_thread,threads,time";
+const string BENCHMARK_RESULTS = "compression_results.csv";
 
 // ------------------------------------------------------
 // Utility functions
@@ -124,12 +126,12 @@ Vec3b getAverageFromPixelGroup(Mat image, vector<tuple<unsigned int, unsigned in
 	return Vec3b(redAverage, greenAverage, blueAverage);
 }
 
-Mat compressImage(Mat image, ImageCompressionRate rate, size_t &numberOfPixelGroups)
+Mat compressImage(Mat image, ImageCompressionRate rate, size_t &pixelGroupQuantity)
 {
 	Mat compressedImage;
 	unsigned int compressionRate = static_cast<unsigned int>(rate);
 	vector<vector<tuple<unsigned int, unsigned int>>> pixelGroups = getAllPixelGroups(image, rate);
-	numberOfPixelGroups = pixelGroups.size();
+	pixelGroupQuantity = pixelGroups.size();
 	for (size_t i = 0; i < pixelGroups.size(); ++i)
 	{
 		Vec3b average = getAverageFromPixelGroup(image, pixelGroups[i]);
@@ -143,38 +145,89 @@ Mat compressImage(Mat image, ImageCompressionRate rate, size_t &numberOfPixelGro
 	return image;
 }
 
-void singleCoreBenchmark(vector<Mat> images)
+Mat compressImageThreads(Mat image, ImageCompressionRate rate, size_t &pixelGroupQuantity, size_t &pixelGroupQuantityPerThread, int threads)
 {
-	fstream file(SINGLE_CORE_BENCHMARK_FILE, ios::out | ios::trunc);
-	if (!file.is_open())
-	{
-		return;
-	}
+	Mat compressedImage;
+	unsigned int compressionRate = static_cast<unsigned int>(rate);
+	vector<vector<tuple<unsigned int, unsigned int>>> pixelGroups = getAllPixelGroups(image, rate);
+	pixelGroupQuantity = pixelGroups.size();
 
-	file << BENCHMARK_COLUMNS << endl;
-	for (size_t i = 0; i < images.size(); ++i)
+	size_t groupsPerThread = pixelGroupQuantity / threads;
+	if (groupsPerThread == 0)
 	{
-		Mat image = images[i];
-		for (ImageCompressionRate rate : AllImageCompressionRates)
+		threads = pixelGroupQuantity;
+		groupsPerThread = 1;
+	}
+	pixelGroupQuantityPerThread = groupsPerThread;
+
+#pragma omp parallel num_threads(threads)
+	{
+		int threadId = omp_get_thread_num();
+
+		size_t startIdx = threadId * groupsPerThread;
+		size_t endIdx = (threadId == threads - 1) ? pixelGroupQuantity : startIdx + groupsPerThread;
+
+		for (size_t i = startIdx; i < endIdx; ++i)
 		{
-			int numberOfPixels = image.cols * image.rows;
-			string compressionRate = parseImageCompressionRate(rate);
-			size_t numberOfPixelGroups = 0;
-			int threads = 1;
-			cout << "Processing image " << i << " with resolution " << image.cols << "x" << image.rows << " and compression rate " << compressionRate << " using " << threads << " thread(s)" << endl;
-			double startTime = omp_get_wtime();
-			Mat compressedImage = compressImage(image.clone(), rate, numberOfPixelGroups);
-			double endTime = omp_get_wtime();
-			file << i << "," << image.cols << "x" << image.rows << "," << numberOfPixels << "," << compressionRate << "," << numberOfPixelGroups << "," << threads << "," << endTime - startTime << endl;
+			Vec3b average = getAverageFromPixelGroup(image, pixelGroups[i]);
+			for (size_t j = 0; j < pixelGroups[i].size(); ++j)
+			{
+				unsigned int x = get<0>(pixelGroups[i][j]);
+				unsigned int y = get<1>(pixelGroups[i][j]);
+				image.at<Vec3b>(Point(x, y)) = average;
+			}
 		}
 	}
+	return image;
+}
+
+void testCompression(string imagePath, string imageName, ImageCompressionRate rate, fstream &file, unsigned int maxThreads)
+{
+	Mat image = imread(imagePath);
+	int numberOfPixels = image.cols * image.rows;
+	string compressionRate = parseImageCompressionRate(rate);
+	size_t pixelGroupQuantity = 0;
+	size_t pixelGroupQuantityPerThread = 0;
+	double startTime = 0.0;
+	double endTime = 0.0;
+
+	cout << "Processing image " << imagePath << " with resolution " << image.cols << "x" << image.rows << " and compression rate " << compressionRate << " using 1 thread" << endl;
+	startTime = omp_get_wtime();
+	Mat compressedImage = compressImage(image.clone(), rate, pixelGroupQuantity);
+	endTime = omp_get_wtime();
+	file << imagePath << "," << image.cols << "x" << image.rows << "," << numberOfPixels << "," << compressionRate << "," << pixelGroupQuantity << "," << pixelGroupQuantity << "," << 1 << "," << endTime - startTime << endl;
+
+	for (unsigned int threads = 2; threads <= maxThreads; threads += 2)
+	{
+		cout << "Processing image " << imagePath << " with resolution " << image.cols << "x" << image.rows << " and compression rate " << compressionRate << " using " << threads << " threads" << endl;
+		startTime = omp_get_wtime();
+		Mat compressedImage = compressImageThreads(image.clone(), rate, pixelGroupQuantity, pixelGroupQuantityPerThread, threads);
+		endTime = omp_get_wtime();
+		saveImage(COMPRESSION_IMAGES_PATH_PROCESSED + imageName + "_" + to_string(threads) + "_" + compressionRate + ".tiff", compressedImage);
+		file << imagePath << "," << image.cols << "x" << image.rows << "," << numberOfPixels << "," << compressionRate << "," << pixelGroupQuantity << "," << pixelGroupQuantityPerThread << "," << threads << "," << endTime - startTime << endl;
+	}
+}
+
+void benchmark(unsigned int maxThreads)
+{
+	string const LARGE_SIZED_IMAGE = COMPRESSION_IMAGES_PATH + "img_01.tiff";
+	string const SMALL_SIZED_IMAGE = COMPRESSION_IMAGES_PATH + "img_05.tiff";
+	fstream file(BENCHMARK_RESULTS, ios::out | ios::trunc);
+	if (!file.is_open())
+	{
+		cout << "Error opening file " << BENCHMARK_RESULTS << endl;
+		return;
+	}
+	file << BENCHMARK_COLUMNS << endl;
+	testCompression(LARGE_SIZED_IMAGE, "img_01", ImageCompressionRate::LOW, file, maxThreads);
+	testCompression(SMALL_SIZED_IMAGE, "img_05", ImageCompressionRate::LOW, file, maxThreads);
 	file.close();
 }
 
 int main(int argc, char **argv)
 {
 	vector<Mat> images = readImages(COMPRESSION_IMAGES_PATH + "*.tiff");
-	singleCoreBenchmark(images);
+	benchmark(32);
 	return EXIT_SUCCESS;
 }
 
