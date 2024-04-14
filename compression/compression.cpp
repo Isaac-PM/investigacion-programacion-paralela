@@ -219,8 +219,16 @@ void benchmark(unsigned int maxThreads)
 		return;
 	}
 	file << BENCHMARK_COLUMNS << endl;
+	
 	testCompression(LARGE_SIZED_IMAGE, "img_01", ImageCompressionRate::LOW, file, maxThreads);
+	testCompression(LARGE_SIZED_IMAGE, "img_01", ImageCompressionRate::MEDIUM, file, maxThreads);
+	testCompression(LARGE_SIZED_IMAGE, "img_01", ImageCompressionRate::HIGH, file, maxThreads);
+	testCompression(LARGE_SIZED_IMAGE, "img_01", ImageCompressionRate::VERY_HIGH, file, maxThreads);
+
 	testCompression(SMALL_SIZED_IMAGE, "img_05", ImageCompressionRate::LOW, file, maxThreads);
+	testCompression(SMALL_SIZED_IMAGE, "img_05", ImageCompressionRate::MEDIUM, file, maxThreads);
+	testCompression(SMALL_SIZED_IMAGE, "img_05", ImageCompressionRate::HIGH, file, maxThreads);
+	testCompression(SMALL_SIZED_IMAGE, "img_05", ImageCompressionRate::VERY_HIGH, file, maxThreads);
 	file.close();
 }
 
