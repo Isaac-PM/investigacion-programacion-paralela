@@ -12,7 +12,7 @@ using namespace std;
 using namespace cv;
 
 const string IMAGE_PATH = "containers/mona_lisa.jpg";
-const char* INFO_TO_EMBED_PATH = "info/img_prueba.jpeg";
+const char* INFO_TO_EMBED_PATH = "info/lorem_ipsum.txt";
 unsigned char* mainBuffer;
 
 enum SizeUnit {
@@ -125,8 +125,8 @@ int main(int argc, char** argv){
     }
 
     verifySizeCompatibility(file, img);
-    // parallelRead(file, fileSize, 5);
-    // embed(img, fileSize);
+    parallelRead(file, fileSize, 5);
+    embed(img, fileSize);
 
 
     fclose(file);
