@@ -45,9 +45,9 @@ void verifySizeCompatibility(FILE* file, Mat img){
     unsigned int totalBitsToStore = img.rows * img.cols * 3;
     unsigned int fileSizeInBits = getFileSizeIn(SizeUnit::BITS, file);
 
-    cout << img.rows << "x" << img.cols << endl;
+    /*cout << img.rows << "x" << img.cols << endl;
     cout << "Total bits to store: " << totalBitsToStore << endl;
-    cout << "File size in bits: " << fileSizeInBits << endl;
+    cout << "File size in bits: " << fileSizeInBits << endl;*/
 
     if(totalBitsToStore < fileSizeInBits){
         cerr << "Error: A bigger container or smaller info is needed.\n";
@@ -125,7 +125,7 @@ int main(int argc, char** argv){
     }
 
     verifySizeCompatibility(file, img);
-    parallelRead(file, fileSize, 5);
+    parallelRead(file, fileSize, atoi(argv[1]));
     embed(img, fileSize);
 
 

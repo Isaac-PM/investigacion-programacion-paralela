@@ -70,13 +70,13 @@ void readFileAndEmbed(FILE* file, Mat& img) {
         if(byte == EOF) break;
 
         for(int bitPos = 0; bitPos < 8; bitPos++) {
-            unsigned char bit = (byte >> bitPos) & 1; // Extrae el bit actual
+            unsigned char bit = (byte >> bitPos) & 1;
             int pixelIdx = idx * 8 + bitPos;
             row = pixelIdx / (width * numChannels);
             col = (pixelIdx % (width * numChannels)) / numChannels;
             int channel = (pixelIdx % (width * numChannels)) % numChannels;
 
-            if(row >= img.rows) break;  // Asegura que no excedemos la imagen
+            if(row >= img.rows) break;
             embed(img, row, col, bit, channel);
         }
     }

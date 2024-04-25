@@ -24,7 +24,7 @@ const string BENCHMARK_RESULTS = "compression_results.csv";
 // ------------------------------------------------------
 // Utility functions
 
-enum class ImageReadResult
+/*enum class ImageReadResult
 {
 	SUCCESS,
 	FAILURE
@@ -32,7 +32,7 @@ enum class ImageReadResult
 
 ImageReadResult readImage(string path, Mat &image);
 
-vector<Mat> readImages(string path);
+vector<Mat> readImages(string path);*/
 
 void saveImage(string path, Mat image);
 
@@ -232,17 +232,17 @@ void benchmark(unsigned int maxThreads)
 	file.close();
 }
 
-int main(int argc, char **argv)
+/*int main(int argc, char **argv)
 {
 	vector<Mat> images = readImages(COMPRESSION_IMAGES_PATH + "*.tiff");
 	benchmark(32);
 	return EXIT_SUCCESS;
-}
+}*/
 
 // ------------------------------------------------------
 // Utility functions
 
-ImageReadResult readImage(string path, Mat &image)
+/*ImageReadResult readImage(string path, Mat &image)
 {
 	image = imread(path);
 	if (image.empty())
@@ -267,7 +267,7 @@ vector<Mat> readImages(string path)
 	}
 	return images;
 }
-
+*/
 void saveImage(string path, Mat image)
 {
 	imwrite(path, image);
