@@ -1,0 +1,1 @@
+g++ -fopenmp -I/usr/include/opencv4 -L/usr/lib -lopencv_core -lopencv_imgcodecs -lopencv_highgui multi.cpp -o multi && ./multi
