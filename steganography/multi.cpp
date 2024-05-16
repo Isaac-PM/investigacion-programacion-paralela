@@ -14,7 +14,8 @@ using namespace cv;
 struct ByteData;
 
 const string IMAGE_PATH = "containers/mona_lisa.jpg";
-const char* INFO_TO_EMBED_PATH = "info/lorem_ipsum.txt";
+const char* INFO_TO_EMBED_PATH = "info/img.jpg";
+
 unsigned char* mainBuffer;
 int* threadsStartPositionsBuffer;
 int* threadsEndPositionsBuffer;
@@ -57,15 +58,6 @@ void embed(Mat &img, int thread){
         for(int j = 0; j < 8; j++){
             bits[j] = (byte.byte >> j) & 1;
         }
-
-        /*
-            struct ByteData{
-                unsigned char byte;
-                size_t posInMainBuffer;
-                size_t row;
-                size_t col;
-            };
-        */
         
         for(int i = 0; i < 3; i++){
             Vec3b pixel = img.at<Vec3b>(byte.row, byte.col + i);
@@ -127,8 +119,6 @@ void parallelRead(const char* fileName, Mat img, int& fileSize, int numThreads){
         } else {
             printf("Error en el hilos %d\n", thread);
         }
-        /*printf("Hilo %d procesa desde %d hasta %d\n",
-               thread, start, end);*/
     }
 
     size_t row = 0;
@@ -141,6 +131,8 @@ void parallelRead(const char* fileName, Mat img, int& fileSize, int numThreads){
         byteDataBuffer[i] = byte;
         col += 3;
     }
+
+    delete[] mainBuffer;
 }
 
 void parallelEmbed(Mat &img, int numThreads){
@@ -151,19 +143,24 @@ void parallelEmbed(Mat &img, int numThreads){
         embed(img, thread);
     }
 
-    imwrite("results/result.jpg", img);
+    imwrite("results/multi/result.jpg", img);
 }
 
 int main(int argc, char** argv){
     const char* fileName = "./info/img.jpg";
     FILE* file = fopen(fileName, "rb");
     Mat img = imread("./containers/mona_lisa.jpg");
-    int numThreads = 10;
+    int numThreads = 15;
     int fileSize;
 
 
     verifySizeCompatibility(file, img);
     parallelRead(fileName, img, fileSize, numThreads);
     parallelEmbed(img, numThreads);
+
+    delete[] byteDataBuffer;
+    delete[] threadsStartPositionsBuffer;
+    delete[] threadsEndPositionsBuffer;
+
     return 0;
 }

@@ -6,8 +6,6 @@
 #include <vector>
 #include <cstdio>
 
-//g++ -fopenmp -I/usr/include/opencv4 -L/usr/lib -lopencv_core -lopencv_imgcodecs -lopencv_highgui mono.cpp -o mono && ./mono
-
 using namespace std;
 using namespace cv;
 
@@ -81,7 +79,7 @@ void readFileAndEmbed(FILE* file, Mat& img) {
         }
     }
 
-    imwrite("results/new_img.jpg", img);
+    imwrite("results/mono/result.jpg", img);
 }
 
 int main(int argc, char** argv){
