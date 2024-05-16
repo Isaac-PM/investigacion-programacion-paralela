@@ -6,6 +6,7 @@
 #include <vector>
 #include "filters/filter.cpp"
 #include "compression/compression.cpp"
+#include "steganography/multi.cpp"
 
 
 using namespace std;
@@ -49,7 +50,7 @@ int main(int argc, char** argv)
 {
 	filter(readImages(FILTERS_IMAGES_PATH + "*.jpg"), FILTERS_IMAGES_PATH, FILTERS_IMAGES_PATH_PROCESSED);
 	benchmark(32); //compression
-	//steganography();
+	steganography(20);
 	//🙂
 	return EXIT_SUCCESS;
 }

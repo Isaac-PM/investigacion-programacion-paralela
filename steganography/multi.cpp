@@ -146,11 +146,10 @@ void parallelEmbed(Mat &img, int numThreads){
     imwrite("results/multi/result.jpg", img);
 }
 
-int main(int argc, char** argv){
+int steganography(int numThreads){
     const char* fileName = "./info/img.jpg";
     FILE* file = fopen(fileName, "rb");
     Mat img = imread("./containers/mona_lisa.jpg");
-    int numThreads = 15;
     int fileSize;
 
 
